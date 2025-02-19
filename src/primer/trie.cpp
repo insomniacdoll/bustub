@@ -24,12 +24,23 @@ namespace bustub {
  */
 template <class T>
 auto Trie::Get(std::string_view key) const -> const T * {
-  throw NotImplementedException("Trie::Get is not implemented.");
-
   // You should walk through the trie to find the node corresponding to the key. If the node doesn't exist, return
   // nullptr. After you find the node, you should use `dynamic_cast` to cast it to `const TrieNodeWithValue<T> *`. If
   // dynamic_cast returns `nullptr`, it means the type of the value is mismatched, and you should return nullptr.
   // Otherwise, return the value.
+  auto current = root_;
+  for (auto ch : key) {
+    auto it = current->children_.find(ch);
+    if (it == current->children_.end()) {
+      return nullptr;
+    }
+    current = it->second;
+  }
+  auto value_node = dynamic_cast<const TrieNodeWithValue<T> *>(current.get());
+  if (value_node == nullptr) {
+    return nullptr;
+  }
+  return value_node->value_.get();
 }
 
 /**
@@ -39,10 +50,20 @@ auto Trie::Get(std::string_view key) const -> const T * {
 template <class T>
 auto Trie::Put(std::string_view key, T value) const -> Trie {
   // Note that `T` might be a non-copyable type. Always use `std::move` when creating `shared_ptr` on that value.
-  throw NotImplementedException("Trie::Put is not implemented.");
-
   // You should walk through the trie and create new nodes if necessary. If the node corresponding to the key already
   // exists, you should create a new `TrieNodeWithValue`.
+  auto new_root = std::make_shared<TrieNode>(*root_);
+  std::shared_ptr<TrieNode> current = new_root;
+  for (auto ch : key) {
+    auto it = current->children_.find(ch);
+    if (it == current->children_.end()) {
+      current->children_[ch] = std::make_shared<TrieNode>();
+    } else {
+      current = std::const_pointer_cast<TrieNode>(it->second);
+    }
+  }
+  current = std::make_shared<TrieNodeWithValue<T>>(current->children_, std::make_shared<T>(std::move(value)));
+  return Trie(new_root);
 }
 
 /**
@@ -50,10 +71,39 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
  * @return If the key does not exist, return the original trie. Otherwise, returns the new trie.
  */
 auto Trie::Remove(std::string_view key) const -> Trie {
-  throw NotImplementedException("Trie::Remove is not implemented.");
-
   // You should walk through the trie and remove nodes if necessary. If the node doesn't contain a value any more,
   // you should convert it to `TrieNode`. If a node doesn't have children any more, you should remove it.
+  auto new_root = std::make_shared<TrieNode>(*root_);
+  auto current = new_root;
+  std::vector<std::shared_ptr<TrieNode>> path;
+  path.push_back(current);
+  for (auto ch : key) {
+    auto it = current->children_.find(ch);
+    if (it == current->children_.end()) {
+      return Trie(root_);
+    }
+    current = std::const_pointer_cast<TrieNode>(it->second);
+    path.push_back(current);
+  }
+  if (!current->is_value_node_) {
+    return Trie(root_);
+  }
+  current = std::make_shared<TrieNode>(current->children_);
+  path.pop_back();
+  for (auto it = path.rbegin(); it != path.rend(); ++it) {
+    auto node = *it;
+    auto ch = key[it - path.rbegin()];
+    if (current->children_.empty() && !current->is_value_node_) {
+      node->children_.erase(ch);
+    } else {
+      node->children_[ch] = current;
+    }
+    if (!node->children_.empty() || node->is_value_node_) {
+      break;
+    }
+    current = node;
+  }
+  return Trie(new_root);
 }
 
 // Below are explicit instantiation of template functions.
