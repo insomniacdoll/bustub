@@ -16,7 +16,7 @@ namespace bustub {
 
 /** @brief Parameterized constructor. */
 template <typename KeyType>
-HyperLogLog<KeyType>::HyperLogLog(int16_t n_bits) : cardinality_(0) {}
+HyperLogLog<KeyType>::HyperLogLog(int16_t n_bits) : cardinality_(0), n_bits_(n_bits), m_(1 << n_bits), registers_(m_, 0) {}
 
 /**
  * @brief Function that computes binary.
@@ -26,8 +26,7 @@ HyperLogLog<KeyType>::HyperLogLog(int16_t n_bits) : cardinality_(0) {}
  */
 template <typename KeyType>
 auto HyperLogLog<KeyType>::ComputeBinary(const hash_t &hash) const -> std::bitset<BITSET_CAPACITY> {
-  /** @TODO(student) Implement this function! */
-  return {0};
+  return std::bitset<BITSET_CAPACITY>(hash);
 }
 
 /**
@@ -38,8 +37,12 @@ auto HyperLogLog<KeyType>::ComputeBinary(const hash_t &hash) const -> std::bitse
  */
 template <typename KeyType>
 auto HyperLogLog<KeyType>::PositionOfLeftmostOne(const std::bitset<BITSET_CAPACITY> &bset) const -> uint64_t {
-  /** @TODO(student) Implement this function! */
-  return 0;
+  for (size_t i = 0; i < BITSET_CAPACITY; ++i) {
+    if (bset.test(i)) {
+      return i;
+    }
+  }
+  return BITSET_CAPACITY;
 }
 
 /**
@@ -49,7 +52,11 @@ auto HyperLogLog<KeyType>::PositionOfLeftmostOne(const std::bitset<BITSET_CAPACI
  */
 template <typename KeyType>
 auto HyperLogLog<KeyType>::AddElem(KeyType val) -> void {
-  /** @TODO(student) Implement this function! */
+  auto hash = CalculateHash(val);
+  auto binary = ComputeBinary(hash);
+  auto index = binary.to_ulong() & ((1ULL << n_bits_) - 1);
+  auto rank = PositionOfLeftmostOne(binary >> n_bits_) + 1;
+  registers_[index] = std::max(registers_[index], static_cast<uint8_t>(rank));
 }
 
 /**
@@ -57,7 +64,18 @@ auto HyperLogLog<KeyType>::AddElem(KeyType val) -> void {
  */
 template <typename KeyType>
 auto HyperLogLog<KeyType>::ComputeCardinality() -> void {
-  /** @TODO(student) Implement this function! */
+  double sum = 0.0;
+  for (auto reg : registers_) {
+    sum += 1.0 / std::pow(2.0, reg);
+  }
+  double estimate = CONSTANT * m_ * m_ / sum;
+  if (estimate <= 2.5 * m_) {
+    size_t zeros = std::count(registers_.begin(), registers_.end(), 0);
+    if (zeros != 0) {
+      estimate = m_ * std::log(static_cast<double>(m_) / zeros);
+    }
+  }
+  cardinality_ = static_cast<size_t>(estimate);
 }
 
 template class HyperLogLog<int64_t>;
