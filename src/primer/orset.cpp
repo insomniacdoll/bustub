@@ -28,8 +28,7 @@ namespace bustub {
  */
 template <typename T>
 auto ORSet<T>::Contains(const T &elem) const -> bool {
-  // TODO(student): Implement this
-  throw NotImplementedException("ORSet<T>::Contains is not implemented");
+  return elements_.find(elem) != elements_.end();
 }
 
 /**
@@ -40,8 +39,7 @@ auto ORSet<T>::Contains(const T &elem) const -> bool {
  */
 template <typename T>
 void ORSet<T>::Add(const T &elem, uid_t uid) {
-  // TODO(student): Implement this
-  throw NotImplementedException("ORSet<T>::Add is not implemented");
+  elements_[elem].push_back(uid);
 }
 
 /**
@@ -51,8 +49,9 @@ void ORSet<T>::Add(const T &elem, uid_t uid) {
  */
 template <typename T>
 void ORSet<T>::Remove(const T &elem) {
-  // TODO(student): Implement this
-  throw NotImplementedException("ORSet<T>::Remove is not implemented");
+  if (elements_.find(elem) != elements_.end()) {
+    elements_.erase(elem);
+  }
 }
 
 /**
@@ -62,8 +61,11 @@ void ORSet<T>::Remove(const T &elem) {
  */
 template <typename T>
 void ORSet<T>::Merge(const ORSet<T> &other) {
-  // TODO(student): Implement this
-  throw NotImplementedException("ORSet<T>::Merge is not implemented");
+  for (const auto &[elem, uids] : other.elements_) {
+    for (const auto &uid : uids) {
+      Add(elem, uid);
+    }
+  }
 }
 
 /**
@@ -73,8 +75,11 @@ void ORSet<T>::Merge(const ORSet<T> &other) {
  */
 template <typename T>
 auto ORSet<T>::Elements() const -> std::vector<T> {
-  // TODO(student): Implement this
-  throw NotImplementedException("ORSet<T>::Elements is not implemented");
+  std::vector<T> result;
+  for (const auto &[elem, _] : elements_) {
+    result.push_back(elem);
+  }
+  return result;
 }
 
 /**

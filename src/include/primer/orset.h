@@ -13,6 +13,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace bustub {
@@ -39,7 +40,7 @@ class ORSet {
   auto ToString() const -> std::string;
 
  private:
-  // TODO(student): Add your private memeber variables to represent ORSet.
+  std::unordered_map<T, std::vector<uid_t>> elements_;
 };
 
 }  // namespace bustub
