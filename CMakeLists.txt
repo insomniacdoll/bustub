@@ -3,9 +3,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For clang-tidy.
 set(BUILD_SHARED_LIBS OFF) # We expect external libraries to be linked statically.
 set(CMAKE_CXX_STANDARD 17) # Compile as C++17.
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # Require C++17 support.
+set(CLANG_VERSION 15) # If you change this, make sure you change `packages.sh`
 
 project(BusTub
-        VERSION 2023.1
+        VERSION 2025.8
         DESCRIPTION "The BusTub Relational Database Management System (Educational) @ https://github.com/cmu-db/bustub"
         LANGUAGES C CXX
 )
@@ -38,19 +39,19 @@ endif()
 
 # Expected directory structure.
 set(BUSTUB_BUILD_SUPPORT_DIR "${CMAKE_SOURCE_DIR}/build_support")
-set(BUSTUB_CLANG_SEARCH_PATH "/usr/local/bin" "/usr/bin" "/usr/local/opt/llvm/bin" "/usr/local/opt/llvm@14/bin"
-        "/opt/homebrew/opt/llvm@14/bin/")
+set(BUSTUB_CLANG_SEARCH_PATH "/usr/local/bin" "/usr/bin" "/usr/local/opt/llvm/bin" "/usr/local/opt/llvm@${CLANG_VERSION}/bin"
+        "/opt/homebrew/opt/llvm@${CLANG_VERSION}/bin/")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        if(CMAKE_CXX_COMPILER_VERSION MATCHES "^14.")
+        if(CMAKE_CXX_COMPILER_VERSION MATCHES "^${CLANG_VERSION}.")
                 message(STATUS "You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
         else()
-                message(WARNING "!! We recommend that you use clang-14 for developing BusTub. You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}, a different version.")
+                message(WARNING "!! We recommend that you use clang-${CLANG_VERSION} for developing BusTub. You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}, a different version.")
         endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
         message(STATUS "You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 else()
-        message(WARNING "!! We recommend that you use clang-14 for developing BusTub. You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}, which is not clang.")
+        message(WARNING "!! We recommend that you use clang-${CLANG_VERSION} for developing BusTub. You're using ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}, which is not clang.")
 endif()
 
 # #####################################################################################################################
@@ -64,7 +65,7 @@ enable_testing()
 
 # attempt to find the binary if user did not specify
 find_program(CLANG_FORMAT_BIN
-        NAMES clang-format clang-format-14
+        NAMES clang-format clang-format-${CLANG_VERSION}
         HINTS ${BUSTUB_CLANG_SEARCH_PATH})
 
 if("${CLANG_FORMAT_BIN}" STREQUAL "CLANG_FORMAT_BIN-NOTFOUND")
@@ -75,7 +76,7 @@ endif()
 
 # attempt to find the binary if user did not specify
 find_program(CLANG_TIDY_BIN
-        NAMES clang-tidy clang-tidy-14
+        NAMES clang-tidy clang-tidy-${CLANG_VERSION}
         HINTS ${BUSTUB_CLANG_SEARCH_PATH})
 
 if("${CLANG_TIDY_BIN}" STREQUAL "CLANG_TIDY_BIN-NOTFOUND")
@@ -87,7 +88,7 @@ else()
 endif()
 
 find_program(CLANG_APPLY_REPLACEMENTS_BIN
-        NAMES clang-apply-replacements clang-apply-replacements-14
+        NAMES clang-apply-replacements clang-apply-replacements-${CLANG_VERSION}
         HINTS ${BUSTUB_CLANG_SEARCH_PATH})
 
 if("${CLANG_APPLY_REPLACEMENTS_BIN}" STREQUAL "CLANG_APPLY_REPLACEMENTS_BIN-NOTFOUND")
@@ -256,8 +257,8 @@ add_custom_target(fix-clang-tidy-diff
 # hardcode some files to check here for each project.
 # ##########################################################
 set(P0_FILES
-        "src/include/primer/skiplist.h"
-        "src/primer/skiplist.cpp"
+        "src/include/primer/count_min_sketch.h"
+        "src/primer/count_min_sketch.cpp"
 )
 
 add_custom_target(check-clang-tidy-p0
@@ -273,8 +274,8 @@ add_custom_target(submit-p0
 )
 
 set(P1_FILES
-        "src/include/buffer/lru_k_replacer.h"
-        "src/buffer/lru_k_replacer.cpp"
+        "src/include/buffer/arc_replacer.h"
+        "src/buffer/arc_replacer.cpp"
         "src/include/buffer/buffer_pool_manager.h"
         "src/buffer/buffer_pool_manager.cpp"
         "src/include/storage/disk/disk_scheduler.h"
@@ -333,6 +334,9 @@ set(P3_FILES
         "src/include/execution/executors/seq_scan_executor.h"
         "src/include/execution/executors/external_merge_sort_executor.h"
         "src/include/execution/executors/update_executor.h"
+        "src/include/execution/plans/aggregation_plan.h"
+        "src/include/storage/page/intermediate_result_page.h"
+        "src/include/execution/executors/window_function_executor.h"
         "src/execution/aggregation_executor.cpp"
         "src/execution/delete_executor.cpp"
         "src/execution/filter_executor.cpp"
@@ -345,6 +349,7 @@ set(P3_FILES
         "src/execution/seq_scan_executor.cpp"
         "src/execution/external_merge_sort_executor.cpp"
         "src/execution/update_executor.cpp"
+        "src/execution/window_function_executor.cpp"
         "src/include/execution/execution_common.h"
         "src/include/optimizer/optimizer.h"
         "src/include/optimizer/optimizer_internal.h"

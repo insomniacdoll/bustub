@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/hash_join_executor.h"
+#include "common/macros.h"
 
 namespace bustub {
 
@@ -25,21 +26,26 @@ HashJoinExecutor::HashJoinExecutor(ExecutorContext *exec_ctx, const HashJoinPlan
                                    std::unique_ptr<AbstractExecutor> &&left_child,
                                    std::unique_ptr<AbstractExecutor> &&right_child)
     : AbstractExecutor(exec_ctx) {
-  if (!(plan->GetJoinType() == JoinType::LEFT || plan->GetJoinType() == JoinType::INNER)) {
-    // Note for Fall 2024: You ONLY need to implement left join and inner join.
+  if (plan->GetJoinType() != JoinType::LEFT && plan->GetJoinType() != JoinType::INNER) {
+    // Note for Spring 2025: You ONLY need to implement left join and inner join.
     throw bustub::NotImplementedException(fmt::format("join type {} not supported", plan->GetJoinType()));
   }
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
 }
 
 /** Initialize the join */
-void HashJoinExecutor::Init() { throw NotImplementedException("HashJoinExecutor is not implemented"); }
+void HashJoinExecutor::Init() { UNIMPLEMENTED("TODO(P3): Add implementation."); }
 
 /**
- * Yield the next tuple from the join.
- * @param[out] tuple The next tuple produced by the join.
- * @param[out] rid The next tuple RID, not used by hash join.
- * @return `true` if a tuple was produced, `false` if there are no more tuples.
+ * Yield the next tuple batch from the hash join.
+ * @param[out] tuple_batch The next tuple batch produced by the hash join
+ * @param[out] rid_batch The next tuple RID batch produced by the hash join
+ * @param batch_size The number of tuples to be included in the batch (default: BUSTUB_BATCH_SIZE)
+ * @return `true` if a tuple was produced, `false` if there are no more tuples
  */
-auto HashJoinExecutor::Next(Tuple *tuple, RID *rid) -> bool { return false; }
+auto HashJoinExecutor::Next(std::vector<bustub::Tuple> *tuple_batch, std::vector<bustub::RID> *rid_batch,
+                            size_t batch_size) -> bool {
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
+}
 
 }  // namespace bustub

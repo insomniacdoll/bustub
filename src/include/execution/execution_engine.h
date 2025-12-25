@@ -80,7 +80,7 @@ class ExecutionEngine {
       auto casted_left_executor = dynamic_cast<const InitCheckExecutor *>(left_executor);
       auto casted_right_executor = dynamic_cast<const InitCheckExecutor *>(right_executor);
       BUSTUB_ASSERT(casted_right_executor->GetInitCount() + 1 >= casted_left_executor->GetNextCount(),
-                    "nlj check failed, are you initialising the right executor every time when there is a left tuple? "
+                    "nlj check failed, are you initializing the right executor every time when there is a left tuple? "
                     "(off-by-one is okay)");
     }
   }
@@ -94,11 +94,11 @@ class ExecutionEngine {
    */
   static void PollExecutor(AbstractExecutor *executor, const AbstractPlanNodeRef &plan,
                            std::vector<Tuple> *result_set) {
-    RID rid{};
-    Tuple tuple{};
-    while (executor->Next(&tuple, &rid)) {
+    std::vector<RID> rids{};
+    std::vector<Tuple> tuples{};
+    while (executor->Next(&tuples, &rids, BUSTUB_BATCH_SIZE)) {
       if (result_set != nullptr) {
-        result_set->push_back(tuple);
+        result_set->insert(result_set->end(), tuples.begin(), tuples.end());
       }
     }
   }

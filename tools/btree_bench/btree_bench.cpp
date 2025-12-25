@@ -46,7 +46,6 @@ auto ClockMs() -> uint64_t {
 
 static const size_t BUSTUB_READ_THREAD = 4;
 static const size_t BUSTUB_WRITE_THREAD = 2;
-static const size_t LRU_K_SIZE = 4;
 // We should keep the BPM size large enough to hold all pages in memory, to minimize the dependency on P1.
 // There will be roughly 500 leaf pages and tens of internal pages. Thus, 1024 should be enough.
 static const size_t BUSTUB_BPM_SIZE = 1024;
@@ -73,9 +72,9 @@ struct BTreeTotalMetrics {
 
   void Report() {
     auto now = ClockMs();
-    auto elsped = now - start_time_;
-    auto write_per_sec = write_cnt_ / static_cast<double>(elsped) * 1000;
-    auto read_per_sec = read_cnt_ / static_cast<double>(elsped) * 1000;
+    auto elapsed = now - start_time_;
+    auto write_per_sec = write_cnt_ / static_cast<double>(elapsed) * 1000;
+    auto read_per_sec = read_cnt_ / static_cast<double>(elapsed) * 1000;
 
     fmt::print("<<< BEGIN\n");
     fmt::print("write: {}\n", write_per_sec);
@@ -101,13 +100,13 @@ struct BTreeMetrics {
 
   void Report() {
     auto now = ClockMs();
-    auto elsped = now - start_time_;
-    if (elsped - last_report_at_ > 1000) {
+    auto elapsed = now - start_time_;
+    if (elapsed - last_report_at_ > 1000) {
       fmt::print(stderr, "[{:5.2f}] {}: total_cnt={:<10} throughput={:<10.3f} avg_throughput={:<10.3f}\n",
-                 elsped / 1000.0, reporter_, cnt_,
-                 (cnt_ - last_cnt_) / static_cast<double>(elsped - last_report_at_) * 1000,
-                 cnt_ / static_cast<double>(elsped) * 1000);
-      last_report_at_ = elsped;
+                 elapsed / 1000.0, reporter_, cnt_,
+                 (cnt_ - last_cnt_) / static_cast<double>(elapsed - last_report_at_) * 1000,
+                 cnt_ / static_cast<double>(elapsed) * 1000);
+      last_report_at_ = elapsed;
       last_cnt_ = cnt_;
     }
   }
@@ -148,18 +147,17 @@ auto main(int argc, char **argv) -> int {
   }
 
   auto disk_manager = std::make_unique<DiskManagerUnlimitedMemory>();
-  auto bpm = std::make_unique<BufferPoolManager>(BUSTUB_BPM_SIZE, disk_manager.get(), LRU_K_SIZE);
+  auto bpm = std::make_unique<BufferPoolManager>(BUSTUB_BPM_SIZE, disk_manager.get());
 
-  fmt::print(stderr, "[info] total_keys={}, duration_ms={}, lru_k_size={}, bpm_size={}\n", TOTAL_KEYS, duration_ms,
-             LRU_K_SIZE, BUSTUB_BPM_SIZE);
+  fmt::print(stderr, "[info] total_keys={}, duration_ms={}, bpm_size={}\n", TOTAL_KEYS, duration_ms, BUSTUB_BPM_SIZE);
 
   auto key_schema = bustub::ParseCreateStatement("a bigint");
   bustub::GenericComparator<8> comparator(key_schema.get());
 
   page_id_t page_id = bpm->NewPage();
 
-  bustub::BPlusTree<bustub::GenericKey<8>, bustub::RID, bustub::GenericComparator<8>> index("foo_pk", page_id,
-                                                                                            bpm.get(), comparator);
+  bustub::BPlusTree<bustub::GenericKey<8>, bustub::RID, bustub::GenericComparator<8>, -1> index("foo_pk", page_id,
+																								bpm.get(), comparator);
 
   for (size_t key = 0; key < TOTAL_KEYS; key++) {
     bustub::GenericKey<8> index_key;

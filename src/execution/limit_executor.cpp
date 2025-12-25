@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/limit_executor.h"
+#include "common/macros.h"
 
 namespace bustub {
 
@@ -22,17 +23,23 @@ namespace bustub {
  */
 LimitExecutor::LimitExecutor(ExecutorContext *exec_ctx, const LimitPlanNode *plan,
                              std::unique_ptr<AbstractExecutor> &&child_executor)
-    : AbstractExecutor(exec_ctx) {}
+    : AbstractExecutor(exec_ctx) {
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
+}
 
 /** Initialize the limit */
-void LimitExecutor::Init() { throw NotImplementedException("LimitExecutor is not implemented"); }
+void LimitExecutor::Init() { UNIMPLEMENTED("TODO(P3): Add implementation."); }
 
 /**
- * Yield the next tuple from the limit.
- * @param[out] tuple The next tuple produced by the limit
- * @param[out] rid The next tuple RID produced by the limit
+ * Yield the next tuple batch from the limit.
+ * @param[out] tuple_batch The next tuple batch produced by the limit
+ * @param[out] rid_batch The next tuple RID batch produced by the limit
+ * @param batch_size The number of tuples to be included in the batch (default: BUSTUB_BATCH_SIZE)
  * @return `true` if a tuple was produced, `false` if there are no more tuples
  */
-auto LimitExecutor::Next(Tuple *tuple, RID *rid) -> bool { return false; }
+auto LimitExecutor::Next(std::vector<bustub::Tuple> *tuple_batch, std::vector<bustub::RID> *rid_batch,
+                         size_t batch_size) -> bool {
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
+}
 
 }  // namespace bustub

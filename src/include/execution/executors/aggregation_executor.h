@@ -17,8 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "common/util/hash_util.h"
-#include "container/hash/hash_function.h"
+#include "common/macros.h"
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/expressions/abstract_expression.h"
@@ -64,8 +63,6 @@ class SimpleAggregationHashTable {
   }
 
   /**
-   * TODO(Student)
-   *
    * Combines the input into the aggregation result.
    * @param[out] result The output aggregate value
    * @param input The input value
@@ -81,6 +78,8 @@ class SimpleAggregationHashTable {
           break;
       }
     }
+
+    UNIMPLEMENTED("TODO(P3): Add implementation.");
   }
 
   /**
@@ -155,7 +154,8 @@ class AggregationExecutor : public AbstractExecutor {
 
   void Init() override;
 
-  auto Next(Tuple *tuple, RID *rid) -> bool override;
+  auto Next(std::vector<bustub::Tuple> *tuple_batch, std::vector<bustub::RID> *rid_batch, size_t batch_size)
+      -> bool override;
 
   /** @return The output schema for the aggregation */
   auto GetOutputSchema() const -> const Schema & override { return plan_->OutputSchema(); };

@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/nested_index_join_executor.h"
+#include "common/macros.h"
 
 namespace bustub {
 
@@ -20,17 +21,21 @@ namespace bustub {
  * @param plan the nested index join plan to be executed
  * @param child_executor the outer table
  */
-NestIndexJoinExecutor::NestIndexJoinExecutor(ExecutorContext *exec_ctx, const NestedIndexJoinPlanNode *plan,
-                                             std::unique_ptr<AbstractExecutor> &&child_executor)
+NestedIndexJoinExecutor::NestedIndexJoinExecutor(ExecutorContext *exec_ctx, const NestedIndexJoinPlanNode *plan,
+                                                 std::unique_ptr<AbstractExecutor> &&child_executor)
     : AbstractExecutor(exec_ctx) {
-  if (!(plan->GetJoinType() == JoinType::LEFT || plan->GetJoinType() == JoinType::INNER)) {
-    // Note for 2023 Spring: You ONLY need to implement left join and inner join.
+  if (plan->GetJoinType() != JoinType::LEFT && plan->GetJoinType() != JoinType::INNER) {
+    // Note for Spring 2025: You ONLY need to implement left join and inner join.
     throw bustub::NotImplementedException(fmt::format("join type {} not supported", plan->GetJoinType()));
   }
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
 }
 
-void NestIndexJoinExecutor::Init() { throw NotImplementedException("NestIndexJoinExecutor is not implemented"); }
+void NestedIndexJoinExecutor::Init() { UNIMPLEMENTED("TODO(P3): Add implementation."); }
 
-auto NestIndexJoinExecutor::Next(Tuple *tuple, RID *rid) -> bool { return false; }
+auto NestedIndexJoinExecutor::Next(std::vector<bustub::Tuple> *tuple_batch, std::vector<bustub::RID> *rid_batch,
+                                   size_t batch_size) -> bool {
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
+}
 
 }  // namespace bustub

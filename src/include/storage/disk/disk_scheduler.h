@@ -15,6 +15,7 @@
 #include <future>  // NOLINT
 #include <optional>
 #include <thread>  // NOLINT
+#include <vector>
 
 #include "common/channel.h"
 #include "storage/disk/disk_manager.h"
@@ -54,7 +55,7 @@ class DiskScheduler {
   explicit DiskScheduler(DiskManager *disk_manager);
   ~DiskScheduler();
 
-  void Schedule(DiskRequest r);
+  void Schedule(std::vector<DiskRequest> &requests);
 
   void StartWorkerThread();
 
@@ -72,7 +73,6 @@ class DiskScheduler {
    * @brief Deallocates a page on disk.
    *
    * Note: You should look at the documentation for `DeletePage` in `BufferPoolManager` before using this method.
-   * Also note: This is a no-op without a more complex data structure to track deallocated pages.
    *
    * @param page_id The page ID of the page to deallocate from disk.
    */

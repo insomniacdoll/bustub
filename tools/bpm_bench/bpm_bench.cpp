@@ -27,7 +27,6 @@
 #include "argparse/argparse.hpp"
 #include "binder/binder.h"
 #include "buffer/buffer_pool_manager.h"
-#include "buffer/lru_k_replacer.h"
 #include "common/config.h"
 #include "common/exception.h"
 #include "common/util/string_util.h"
@@ -63,9 +62,9 @@ struct BpmTotalMetrics {
 
   void Report() {
     auto now = ClockMs();
-    auto elsped = now - start_time_;
-    auto scan_per_sec = scan_cnt_ / static_cast<double>(elsped) * 1000;
-    auto get_per_sec = get_cnt_ / static_cast<double>(elsped) * 1000;
+    auto elapsed = now - start_time_;
+    auto scan_per_sec = scan_cnt_ / static_cast<double>(elapsed) * 1000;
+    auto get_per_sec = get_cnt_ / static_cast<double>(elapsed) * 1000;
 
     fmt::print("<<< BEGIN\n");
     fmt::print("scan: {}\n", scan_per_sec);
@@ -91,13 +90,13 @@ struct BpmMetrics {
 
   void Report() {
     auto now = ClockMs();
-    auto elsped = now - start_time_;
-    if (elsped - last_report_at_ > 1000) {
+    auto elapsed = now - start_time_;
+    if (elapsed - last_report_at_ > 1000) {
       fmt::print(stderr, "[{:5.2f}] {}: total_cnt={:<10} throughput={:<10.3f} avg_throughput={:<10.3f}\n",
-                 elsped / 1000.0, reporter_, cnt_,
-                 (cnt_ - last_cnt_) / static_cast<double>(elsped - last_report_at_) * 1000,
-                 cnt_ / static_cast<double>(elsped) * 1000);
-      last_report_at_ = elsped;
+                 elapsed / 1000.0, reporter_, cnt_,
+                 (cnt_ - last_cnt_) / static_cast<double>(elapsed - last_report_at_) * 1000,
+                 cnt_ / static_cast<double>(elapsed) * 1000);
+      last_report_at_ = elapsed;
       last_cnt_ = cnt_;
     }
   }
@@ -207,7 +206,7 @@ auto main(int argc, char **argv) -> int {
   }
 
   auto disk_manager = std::make_unique<DiskManagerUnlimitedMemory>();
-  auto bpm = std::make_unique<BufferPoolManager>(bustub_bpm_size, disk_manager.get(), lru_k_size);
+  auto bpm = std::make_unique<BufferPoolManager>(bustub_bpm_size, disk_manager.get());
   std::vector<page_id_t> page_ids;
 
   fmt::print(stderr,

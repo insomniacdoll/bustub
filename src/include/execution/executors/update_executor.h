@@ -13,14 +13,12 @@
 #pragma once
 
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/update_plan.h"
 #include "storage/table/tuple.h"
-#include "type/value_factory.h"
 
 namespace bustub {
 
@@ -37,7 +35,8 @@ class UpdateExecutor : public AbstractExecutor {
 
   void Init() override;
 
-  auto Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool override;
+  auto Next(std::vector<bustub::Tuple> *tuple_batch, std::vector<bustub::RID> *rid_batch, size_t batch_size)
+      -> bool override;
 
   /** @return The output schema for the update */
   auto GetOutputSchema() const -> const Schema & override { return plan_->OutputSchema(); }

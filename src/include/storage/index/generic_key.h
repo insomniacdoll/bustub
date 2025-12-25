@@ -22,7 +22,7 @@ namespace bustub {
 /**
  * Generic key is used for indexing with opaque data.
  *
- * This key type uses an fixed length array to hold data for indexing
+ * This key type uses a fixed length array to hold data for indexing
  * purposes, the actual size of which is specified and instantiated
  * with a template argument.
  */
@@ -39,6 +39,13 @@ class GenericKey {
   inline void SetFromInteger(int64_t key) {
     memset(data_, 0, KeySize);
     memcpy(data_, &key, sizeof(int64_t));
+  }
+
+  // NOTE: for test purpose only
+  inline auto GetAsInteger() const -> int64_t {
+    int64_t out;
+    memcpy(&out, data_, sizeof(int64_t));
+    return out;
   }
 
   inline auto ToValue(Schema *schema, uint32_t column_idx) const -> Value {

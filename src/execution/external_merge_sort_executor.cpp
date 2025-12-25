@@ -11,10 +11,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/external_merge_sort_executor.h"
-#include <iostream>
-#include <optional>
 #include <vector>
-#include "common/config.h"
+#include "common/macros.h"
 #include "execution/plans/sort_plan.h"
 
 namespace bustub {
@@ -22,23 +20,27 @@ namespace bustub {
 template <size_t K>
 ExternalMergeSortExecutor<K>::ExternalMergeSortExecutor(ExecutorContext *exec_ctx, const SortPlanNode *plan,
                                                         std::unique_ptr<AbstractExecutor> &&child_executor)
-    : AbstractExecutor(exec_ctx), cmp_(plan->GetOrderBy()) {}
+    : AbstractExecutor(exec_ctx), cmp_(plan->GetOrderBy()) {
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
+}
 
 /** Initialize the external merge sort */
 template <size_t K>
 void ExternalMergeSortExecutor<K>::Init() {
-  throw NotImplementedException("ExternalMergeSortExecutor is not implemented");
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
 }
 
 /**
- * Yield the next tuple from the external merge sort.
- * @param[out] tuple The next tuple produced by the external merge sort.
- * @param[out] rid The next tuple RID produced by the external merge sort.
+ * Yield the next tuple batch from the external merge sort.
+ * @param[out] tuple_batch The next tuple batch produced by the external merge sort.
+ * @param[out] rid_batch The next tuple RID batch produced by the external merge sort.
+ * @param batch_size The number of tuples to be included in the batch (default: BUSTUB_BATCH_SIZE)
  * @return `true` if a tuple was produced, `false` if there are no more tuples
  */
 template <size_t K>
-auto ExternalMergeSortExecutor<K>::Next(Tuple *tuple, RID *rid) -> bool {
-  return false;
+auto ExternalMergeSortExecutor<K>::Next(std::vector<bustub::Tuple> *tuple_batch, std::vector<bustub::RID> *rid_batch,
+                                        size_t batch_size) -> bool {
+  UNIMPLEMENTED("TODO(P3): Add implementation.");
 }
 
 template class ExternalMergeSortExecutor<2>;

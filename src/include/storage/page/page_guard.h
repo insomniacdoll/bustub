@@ -14,6 +14,7 @@
 
 #include <memory>
 
+#include "buffer/arc_replacer.h"
 #include "buffer/buffer_pool_manager.h"
 #include "storage/disk/disk_scheduler.h"
 #include "storage/page/page.h"
@@ -67,7 +68,7 @@ class ReadPageGuard {
 
  private:
   /** @brief Only the buffer pool manager is allowed to construct a valid `ReadPageGuard.` */
-  explicit ReadPageGuard(page_id_t page_id, std::shared_ptr<FrameHeader> frame, std::shared_ptr<LRUKReplacer> replacer,
+  explicit ReadPageGuard(page_id_t page_id, std::shared_ptr<FrameHeader> frame, std::shared_ptr<ArcReplacer> replacer,
                          std::shared_ptr<std::mutex> bpm_latch, std::shared_ptr<DiskScheduler> disk_scheduler);
 
   /** @brief The page ID of the page we are guarding. */
@@ -86,7 +87,7 @@ class ReadPageGuard {
    * Since the buffer pool cannot know when this `ReadPageGuard` gets destructed, we maintain a pointer to the buffer
    * pool's replacer in order to set the frame as evictable on destruction.
    */
-  std::shared_ptr<LRUKReplacer> replacer_;
+  std::shared_ptr<ArcReplacer> replacer_;
 
   /**
    * @brief A shared pointer to the buffer pool's latch.
@@ -118,7 +119,7 @@ class ReadPageGuard {
   /**
    * TODO(P1): You may add any fields under here that you think are necessary.
    *
-   * If you want extra (non-existent) style points, and you want to be extra fancy, then you can look into the
+   * If you want extra (nonexistent) style points, and you want to be extra fancy, then you can look into the
    * `std::shared_lock` type and use that for the latching mechanism instead of manually calling `lock` and `unlock`.
    */
 };
@@ -129,10 +130,10 @@ class ReadPageGuard {
  * The _only_ way that the BusTub system should interact with the buffer pool's page data is via page guards. Since
  * `WritePageGuard` is an RAII object, the system never has to manually lock and unlock a page's latch.
  *
- * With a `WritePageGuard`, there can be only be 1 thread that has exclusive ownership over the page's data. This means
- * that the owner of the `WritePageGuard` can mutate the page's data as much as they want. However, the existence of a
- * `WritePageGuard` implies that no other `WritePageGuard` or any `ReadPageGuard`s for the same page can exist at the
- * same time.
+ * With a `WritePageGuard`, there can be only be one thread that has exclusive ownership over the page's data. This
+ * means that the owner of the `WritePageGuard` can mutate the page's data as much as they want. However, the existence
+ * of a `WritePageGuard` implies that no other `WritePageGuard` or any `ReadPageGuard`s for the same page can exist at
+ * the same time.
  */
 class WritePageGuard {
   /** @brief Only the buffer pool manager is allowed to construct a valid `WritePageGuard.` */
@@ -174,7 +175,7 @@ class WritePageGuard {
 
  private:
   /** @brief Only the buffer pool manager is allowed to construct a valid `WritePageGuard.` */
-  explicit WritePageGuard(page_id_t page_id, std::shared_ptr<FrameHeader> frame, std::shared_ptr<LRUKReplacer> replacer,
+  explicit WritePageGuard(page_id_t page_id, std::shared_ptr<FrameHeader> frame, std::shared_ptr<ArcReplacer> replacer,
                           std::shared_ptr<std::mutex> bpm_latch, std::shared_ptr<DiskScheduler> disk_scheduler);
 
   /** @brief The page ID of the page we are guarding. */
@@ -193,7 +194,7 @@ class WritePageGuard {
    * Since the buffer pool cannot know when this `WritePageGuard` gets destructed, we maintain a pointer to the buffer
    * pool's replacer in order to set the frame as evictable on destruction.
    */
-  std::shared_ptr<LRUKReplacer> replacer_;
+  std::shared_ptr<ArcReplacer> replacer_;
 
   /**
    * @brief A shared pointer to the buffer pool's latch.
@@ -225,7 +226,7 @@ class WritePageGuard {
   /**
    * TODO(P1): You may add any fields under here that you think are necessary.
    *
-   * If you want extra (non-existent) style points, and you want to be extra fancy, then you can look into the
+   * If you want extra (nonexistent) style points, and you want to be extra fancy, then you can look into the
    * `std::unique_lock` type and use that for the latching mechanism instead of manually calling `lock` and `unlock`.
    */
 };
