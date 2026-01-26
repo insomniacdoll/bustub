@@ -22,6 +22,8 @@
 #include <vector>
 
 #include "common/util/hash_util.h"
+#include "type/value.h"
+#include "type/value_factory.h"
 
 /** @brief Dense bucket size. */
 static constexpr int DENSE_BUCKET_SIZE = 4;
@@ -71,15 +73,13 @@ class HyperLogLogPresto {
    * @returns hash value
    */
   inline auto CalculateHash(KeyType val) -> hash_t {
-    Value val_obj;
-    if constexpr (std::is_same<KeyType, std::string>::value) {
-      val_obj = Value(VARCHAR, val);
+    if constexpr (std::is_same_v<KeyType, std::string>) {
+      Value val_obj = ValueFactory::GetVarcharValue(val);
+      return bustub::HashUtil::HashValue(&val_obj);
+    } else {
+      Value val_obj = ValueFactory::GetBigIntValue(val);
       return bustub::HashUtil::HashValue(&val_obj);
     }
-    if constexpr (std::is_same<KeyType, int64_t>::value) {
-      return static_cast<hash_t>(val);
-    }
-    return 0;
   }
 
   /** @brief Structure holding dense buckets (or also known as registers). */
@@ -90,6 +90,23 @@ class HyperLogLogPresto {
 
   /** @brief Storing cardinality value */
   uint64_t cardinality_;
+
+  /** @brief Number of leading bits for index. */
+  int16_t n_leading_bits_;
+
+  /**
+   * @brief Compute position of leftmost 1 in a hash value.
+   *
+   * @param[in] hash
+   * @returns position of leftmost 1 (from MSB, 1-indexed)
+   */
+  inline auto PositionOfLeftmostOne(hash_t hash) const -> uint64_t {
+    if (hash == 0) {
+      return 65;  // Special case: all bits are 0, return 65
+    }
+    // __builtin_clzll returns number of leading zeros, position of leftmost 1 is clz + 1
+    return __builtin_clzll(hash) + 1;
+  }
 
   // TODO(student) - can add more data structures as required
 };

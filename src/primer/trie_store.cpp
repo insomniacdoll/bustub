@@ -29,20 +29,20 @@ template <class T>
 void TrieStore::Put(std::string_view key, T value) {
   // Ensure there is only one writer at a time.
   std::lock_guard<std::mutex> write_lock(write_lock_);
-  std::lock_guard<std::mutex> root_lock(root_lock_); // 修改：使用 std::mutex
+  std::lock_guard<std::mutex> root_lock(root_lock_);
 
-  // Insert or update the value in the trie.
-  root_.Put(key, std::move(value));
+  // Insert or update the value in the trie and update the root.
+  root_ = root_.Put(key, std::move(value));
 }
 
 /** @brief This function will remove the key-value pair from the trie. */
 void TrieStore::Remove(std::string_view key) {
   // Ensure there is only one writer at a time.
   std::lock_guard<std::mutex> write_lock(write_lock_);
-  std::lock_guard<std::mutex> root_lock(root_lock_); // 修改：使用 std::mutex
+  std::lock_guard<std::mutex> root_lock(root_lock_);
 
-  // Remove the value from the trie.
-  root_.Remove(key);
+  // Remove the value from the trie and update the root.
+  root_ = root_.Remove(key);
 }
 
 // Below are explicit instantiation of template functions.

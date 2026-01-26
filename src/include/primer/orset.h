@@ -40,7 +40,8 @@ class ORSet {
   auto ToString() const -> std::string;
 
  private:
-  std::unordered_map<T, std::vector<uid_t>> elements_;
+  std::unordered_map<T, std::vector<uid_t>> add_set_;
+  std::unordered_map<T, std::vector<uid_t>> remove_set_;
 };
 
 }  // namespace bustub

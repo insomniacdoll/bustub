@@ -28,7 +28,30 @@ namespace bustub {
  */
 template <typename T>
 auto ORSet<T>::Contains(const T &elem) const -> bool {
-  return elements_.find(elem) != elements_.end();
+  auto add_it = add_set_.find(elem);
+  auto remove_it = remove_set_.find(elem);
+
+  // If element was never added, it's not in the set
+  if (add_it == add_set_.end()) {
+    return false;
+  }
+
+  // If element was added but never removed, it's in the set
+  if (remove_it == remove_set_.end()) {
+    return true;
+  }
+
+  // Check if any of the add UIDs are not in the remove set
+  const auto &add_uids = add_it->second;
+  const auto &remove_uids = remove_it->second;
+
+  for (const auto &add_uid : add_uids) {
+    if (std::find(remove_uids.begin(), remove_uids.end(), add_uid) == remove_uids.end()) {
+      return true; // At least one add operation is not removed
+    }
+  }
+
+  return false; // All add operations have been removed
 }
 
 /**
@@ -39,7 +62,7 @@ auto ORSet<T>::Contains(const T &elem) const -> bool {
  */
 template <typename T>
 void ORSet<T>::Add(const T &elem, uid_t uid) {
-  elements_[elem].push_back(uid);
+  add_set_[elem].push_back(uid);
 }
 
 /**
@@ -49,8 +72,15 @@ void ORSet<T>::Add(const T &elem, uid_t uid) {
  */
 template <typename T>
 void ORSet<T>::Remove(const T &elem) {
-  if (elements_.find(elem) != elements_.end()) {
-    elements_.erase(elem);
+  auto add_it = add_set_.find(elem);
+  if (add_it != add_set_.end()) {
+    // Add all existing add UIDs to the remove set
+    for (const auto &uid : add_it->second) {
+      auto &remove_uids = remove_set_[elem];
+      if (std::find(remove_uids.begin(), remove_uids.end(), uid) == remove_uids.end()) {
+        remove_uids.push_back(uid);
+      }
+    }
   }
 }
 
@@ -61,9 +91,23 @@ void ORSet<T>::Remove(const T &elem) {
  */
 template <typename T>
 void ORSet<T>::Merge(const ORSet<T> &other) {
-  for (const auto &[elem, uids] : other.elements_) {
-    for (const auto &uid : uids) {
-      Add(elem, uid);
+  // Merge add operations
+  for (const auto &[elem, other_add_uids] : other.add_set_) {
+    auto &local_add_uids = add_set_[elem];
+    for (const auto &uid : other_add_uids) {
+      if (std::find(local_add_uids.begin(), local_add_uids.end(), uid) == local_add_uids.end()) {
+        local_add_uids.push_back(uid);
+      }
+    }
+  }
+
+  // Merge remove operations
+  for (const auto &[elem, other_remove_uids] : other.remove_set_) {
+    auto &local_remove_uids = remove_set_[elem];
+    for (const auto &uid : other_remove_uids) {
+      if (std::find(local_remove_uids.begin(), local_remove_uids.end(), uid) == local_remove_uids.end()) {
+        local_remove_uids.push_back(uid);
+      }
     }
   }
 }
@@ -76,8 +120,10 @@ void ORSet<T>::Merge(const ORSet<T> &other) {
 template <typename T>
 auto ORSet<T>::Elements() const -> std::vector<T> {
   std::vector<T> result;
-  for (const auto &[elem, _] : elements_) {
-    result.push_back(elem);
+  for (const auto &[elem, _] : add_set_) {
+    if (Contains(elem)) {
+      result.push_back(elem);
+    }
   }
   return result;
 }

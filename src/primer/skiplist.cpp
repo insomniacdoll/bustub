@@ -15,6 +15,8 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <vector>
 #include "common/macros.h"
@@ -26,11 +28,13 @@ namespace bustub {
 
 /** @brief Checks whether the container is empty. */
 SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Empty() -> bool {
+  std::shared_lock<std::shared_mutex> lock(rwlock_);
   return size_ == 0;
 }
 
 /** @brief Returns the number of elements in the skip list. */
 SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Size() -> size_t {
+  std::shared_lock<std::shared_mutex> lock(rwlock_);
   return size_;
 }
 
@@ -59,6 +63,7 @@ SKIPLIST_TEMPLATE_ARGUMENTS void SkipList<K, Compare, MaxHeight, Seed>::Drop() {
  * Note: You might want to use the provided `Drop` helper function.
  */
 SKIPLIST_TEMPLATE_ARGUMENTS void SkipList<K, Compare, MaxHeight, Seed>::Clear() {
+  std::unique_lock<std::shared_mutex> lock(rwlock_);
   Drop();
   header_ = std::make_shared<SkipNode>(MaxHeight);
   height_ = 1;
@@ -74,6 +79,7 @@ SKIPLIST_TEMPLATE_ARGUMENTS void SkipList<K, Compare, MaxHeight, Seed>::Clear() 
  * @return true if the insertion is successful, false if the key already exists.
  */
 SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Insert(const K &key) -> bool {
+  std::unique_lock<std::shared_mutex> lock(rwlock_);
   std::vector<std::shared_ptr<SkipNode>> update(MaxHeight);
   auto node = header_;
   for (int i = height_ - 1; i >= 0; --i) {
@@ -98,6 +104,7 @@ SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Insert(c
     node->SetNext(i, update[i]->Next(i));
     update[i]->SetNext(i, node);
   }
+  size_++;  // Increment size when inserting a new key
   return true;
 }
 
@@ -108,6 +115,7 @@ SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Insert(c
  * @return bool true if the element got erased, false otherwise.
  */
 SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Erase(const K &key) -> bool {
+  std::unique_lock<std::shared_mutex> lock(rwlock_);
   std::vector<std::shared_ptr<SkipNode>> update(MaxHeight);
   auto node = header_;
   for (int i = height_ - 1; i >= 0; --i) {
@@ -129,7 +137,7 @@ SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Erase(co
   while (height_ > 1 && header_->Next(height_ - 1) == nullptr) {
     --height_;
   }
-  --size_;
+  --size_;  // Decrement size when erasing a key
   return true;
 }
 
@@ -140,6 +148,7 @@ SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Erase(co
  * @return bool true if the element exists, false otherwise.
  */
 SKIPLIST_TEMPLATE_ARGUMENTS auto SkipList<K, Compare, MaxHeight, Seed>::Contains(const K &key) -> bool {
+  std::shared_lock<std::shared_mutex> lock(rwlock_);
   auto node = header_;
   for (int i = height_ - 1; i >= 0; --i) {
     while (node->Next(i) != nullptr && compare_(node->Next(i)->Key(), key)) {

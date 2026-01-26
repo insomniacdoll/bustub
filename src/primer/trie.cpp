@@ -12,6 +12,8 @@
 
 #include "primer/trie.h"
 #include <string_view>
+#include <functional>
+#include <iostream>
 #include "common/exception.h"
 
 namespace bustub {
@@ -24,22 +26,27 @@ namespace bustub {
  */
 template <class T>
 auto Trie::Get(std::string_view key) const -> const T * {
-  // You should walk through the trie to find the node corresponding to the key. If the node doesn't exist, return
-  // nullptr. After you find the node, you should use `dynamic_cast` to cast it to `const TrieNodeWithValue<T> *`. If
-  // dynamic_cast returns `nullptr`, it means the type of the value is mismatched, and you should return nullptr.
-  // Otherwise, return the value.
-  auto current = root_;
-  for (auto ch : key) {
-    auto it = current->children_.find(ch);
-    if (it == current->children_.end()) {
+  auto node = root_;
+  for (char c : key) {
+    if (node == nullptr) {
       return nullptr;
     }
-    current = it->second;
+    auto it = node->children_.find(c);
+    if (it == node->children_.end()) {
+      return nullptr;
+    }
+    node = it->second;
   }
-  auto value_node = dynamic_cast<const TrieNodeWithValue<T> *>(current.get());
+
+  if (node == nullptr || !node->is_value_node_) {
+    return nullptr;
+  }
+
+  auto value_node = dynamic_cast<const TrieNodeWithValue<T> *>(node.get());
   if (value_node == nullptr) {
     return nullptr;
   }
+
   return value_node->value_.get();
 }
 
@@ -50,19 +57,77 @@ auto Trie::Get(std::string_view key) const -> const T * {
 template <class T>
 auto Trie::Put(std::string_view key, T value) const -> Trie {
   // Note that `T` might be a non-copyable type. Always use `std::move` when creating `shared_ptr` on that value.
-  // You should walk through the trie and create new nodes if necessary. If the node corresponding to the key already
-  // exists, you should create a new `TrieNodeWithValue`.
-  auto new_root = std::make_shared<TrieNode>(*root_);
-  std::shared_ptr<TrieNode> current = new_root;
-  for (auto ch : key) {
-    auto it = current->children_.find(ch);
-    if (it == current->children_.end()) {
-      current->children_[ch] = std::make_shared<TrieNode>();
+  auto value_ptr = std::make_shared<T>(std::move(value));
+
+  // Recursive helper function that creates the new trie
+  std::function<std::shared_ptr<const TrieNode>(std::shared_ptr<const TrieNode>, size_t)> insert;
+  insert = [&](std::shared_ptr<const TrieNode> node, size_t depth) -> std::shared_ptr<const TrieNode> {
+    // Base case: we've processed all characters in the key
+    if (depth == key.size()) {
+      if (node == nullptr) {
+        // No existing node, create a new value node
+        return std::make_shared<const TrieNodeWithValue<T>>(value_ptr);
+      } else {
+        // Replace existing node with value node, preserving children
+        return std::make_shared<const TrieNodeWithValue<T>>(node->children_, value_ptr);
+      }
+    }
+
+    // Get the current character
+    char c = key[depth];
+    
+    // Get the child node for this character (if exists)
+    std::shared_ptr<const TrieNode> child_node = nullptr;
+    std::map<char, std::shared_ptr<const TrieNode>> new_children;
+    
+    // Copy all children to the new map
+    if (node != nullptr) {
+      for (const auto &[child_char, child] : node->children_) {
+        new_children[child_char] = child;
+      }
+      
+      // Get the specific child we're updating
+      auto it = node->children_.find(c);
+      if (it != node->children_.end()) {
+        child_node = it->second;
+      }
+    }
+    
+    // Update the child for character c by recursively inserting
+    new_children[c] = insert(child_node, depth + 1);
+
+    // Create the new node with the updated children
+    if (node != nullptr && node->is_value_node_) {
+      // Node has a value, need to preserve it with the correct type
+      if (auto *str_node = dynamic_cast<const TrieNodeWithValue<std::string>*>(node.get())) {
+        return std::make_shared<const TrieNodeWithValue<std::string>>(str_node->value_, new_children);
+      } else if (auto *int_node = dynamic_cast<const TrieNodeWithValue<uint32_t>*>(node.get())) {
+        return std::make_shared<const TrieNodeWithValue<uint32_t>>(int_node->value_, new_children);
+      } else if (auto *uint64_node = dynamic_cast<const TrieNodeWithValue<uint64_t>*>(node.get())) {
+        return std::make_shared<const TrieNodeWithValue<uint64_t>>(uint64_node->value_, new_children);
+      } else if (auto *integer_node = dynamic_cast<const TrieNodeWithValue<std::unique_ptr<uint32_t>>*>(node.get())) {
+        return std::make_shared<const TrieNodeWithValue<std::unique_ptr<uint32_t>>>(integer_node->value_, new_children);
+      } else if (auto *blocked_node = dynamic_cast<const TrieNodeWithValue<MoveBlocked>*>(node.get())) {
+        return std::make_shared<const TrieNodeWithValue<MoveBlocked>>(blocked_node->value_, new_children);
+      } else {
+        // For unknown type, create a basic node with the updated children
+        return std::make_shared<const TrieNode>(new_children);
+      }
     } else {
-      current = std::const_pointer_cast<TrieNode>(it->second);
+      // Node doesn't have a value
+      return std::make_shared<const TrieNode>(new_children);
+    }
+  };
+
+  if (key.empty()) {
+    if (root_ == nullptr) {
+      return Trie(std::make_shared<const TrieNodeWithValue<T>>(value_ptr));
+    } else {
+      return Trie(std::make_shared<const TrieNodeWithValue<T>>(root_->children_, value_ptr));
     }
   }
-  current = std::make_shared<TrieNodeWithValue<T>>(current->children_, std::make_shared<T>(std::move(value)));
+
+  auto new_root = insert(root_, 0);
   return Trie(new_root);
 }
 
@@ -71,38 +136,101 @@ auto Trie::Put(std::string_view key, T value) const -> Trie {
  * @return If the key does not exist, return the original trie. Otherwise, returns the new trie.
  */
 auto Trie::Remove(std::string_view key) const -> Trie {
-  // You should walk through the trie and remove nodes if necessary. If the node doesn't contain a value any more,
-  // you should convert it to `TrieNode`. If a node doesn't have children any more, you should remove it.
-  auto new_root = std::make_shared<TrieNode>(*root_);
-  auto current = new_root;
-  std::vector<std::shared_ptr<TrieNode>> path;
-  path.push_back(current);
-  for (auto ch : key) {
-    auto it = current->children_.find(ch);
-    if (it == current->children_.end()) {
-      return Trie(root_);
+  // Check if the key exists
+  auto node = root_;
+  for (char c : key) {
+    if (node == nullptr) {
+      return *this;
     }
-    current = std::const_pointer_cast<TrieNode>(it->second);
-    path.push_back(current);
+    auto it = node->children_.find(c);
+    if (it == node->children_.end()) {
+      return *this;
+    }
+    node = it->second;
   }
-  if (!current->is_value_node_) {
-    return Trie(root_);
+
+  if (node == nullptr || !node->is_value_node_) {
+    return *this;
   }
-  current = std::make_shared<TrieNode>(current->children_);
-  path.pop_back();
-  for (auto it = path.rbegin(); it != path.rend(); ++it) {
-    auto node = *it;
-    auto ch = key[it - path.rbegin()];
-    if (current->children_.empty() && !current->is_value_node_) {
-      node->children_.erase(ch);
+
+  // Handle empty key case
+  if (key.empty()) {
+    if (root_ == nullptr || !root_->is_value_node_) {
+      return *this;
+    }
+
+    // Remove the value from root, keep children
+    if (root_->children_.empty()) {
+      return Trie();
+    }
+
+    auto new_root = std::make_shared<const TrieNode>(root_->children_);
+    return Trie(new_root);
+  }
+
+  // Helper function to recursively remove the key
+  std::function<std::shared_ptr<const TrieNode>(std::shared_ptr<const TrieNode>, size_t)> remove_node;
+  remove_node = [&](std::shared_ptr<const TrieNode> current_node, size_t depth) -> std::shared_ptr<const TrieNode> {
+    if (depth == key.size()) {
+      // At the target node, remove the value
+      if (current_node->children_.empty()) {
+        // If no children, return nullptr to remove this node
+        return nullptr;
+      } else {
+        // If has children, return a new node without the value
+        return std::make_shared<const TrieNode>(current_node->children_);
+      }
+    }
+
+    char c = key[depth];
+    
+    // Get the child to process
+    auto child_it = current_node->children_.find(c);
+    if (child_it == current_node->children_.end()) {
+      // This shouldn't happen if we checked existence earlier, but return original if so
+      return current_node;
+    }
+    
+    // Process the child recursively
+    auto new_child = remove_node(child_it->second, depth + 1);
+    
+    // Update children map
+    std::map<char, std::shared_ptr<const TrieNode>> new_children = current_node->children_;
+    if (new_child == nullptr) {
+      new_children.erase(c);
+      // If current node has no value and no children after removal, remove the node
+      if (new_children.empty() && !current_node->is_value_node_) {
+        return nullptr;
+      }
     } else {
-      node->children_[ch] = current;
+      new_children[c] = new_child;
     }
-    if (!node->children_.empty() || node->is_value_node_) {
-      break;
+    
+    // Preserve the value if the current node has one
+    if (current_node->is_value_node_) {
+      // Handle different value types
+      if (auto *str_node = dynamic_cast<const TrieNodeWithValue<std::string>*>(current_node.get())) {
+        return std::make_shared<const TrieNodeWithValue<std::string>>(str_node->value_, new_children);
+      } else if (auto *int_node = dynamic_cast<const TrieNodeWithValue<uint32_t>*>(current_node.get())) {
+        return std::make_shared<const TrieNodeWithValue<uint32_t>>(int_node->value_, new_children);
+      } else if (auto *uint64_node = dynamic_cast<const TrieNodeWithValue<uint64_t>*>(current_node.get())) {
+        return std::make_shared<const TrieNodeWithValue<uint64_t>>(uint64_node->value_, new_children);
+      } else if (auto *integer_node = dynamic_cast<const TrieNodeWithValue<std::unique_ptr<uint32_t>>*>(current_node.get())) {
+        return std::make_shared<const TrieNodeWithValue<std::unique_ptr<uint32_t>>>(integer_node->value_, new_children);
+      } else if (auto *blocked_node = dynamic_cast<const TrieNodeWithValue<MoveBlocked>*>(current_node.get())) {
+        return std::make_shared<const TrieNodeWithValue<MoveBlocked>>(blocked_node->value_, new_children);
+      }
+      // For other types, create a regular node with updated children
+      auto new_node = std::make_shared<TrieNode>(new_children);
+      new_node->is_value_node_ = current_node->is_value_node_;
+      return new_node;
+    } else {
+      return std::make_shared<const TrieNode>(new_children);
     }
-    current = node;
-  }
+  };
+
+  // Remove the key from the trie
+  auto new_root = remove_node(root_, 0);
   return Trie(new_root);
 }
 

@@ -97,11 +97,17 @@ class TrieNodeWithValue : public TrieNode {
     this->is_value_node_ = true;
   }
 
+  // Create a trie node with children and a value (for direct value)
+  explicit TrieNodeWithValue(std::shared_ptr<T> value, std::map<char, std::shared_ptr<const TrieNode>> children)
+      : TrieNode(std::move(children)), value_(std::move(value)) {
+    this->is_value_node_ = true;
+  }
+
   // Override the Clone method to also clone the value.
   //
   // Note: if you want to convert `unique_ptr` into `shared_ptr`, you can use `std::shared_ptr<T>(std::move(ptr))`.
   auto Clone() const -> std::unique_ptr<TrieNode> override {
-    return std::make_unique<TrieNodeWithValue<T>>(children_, value_);
+    return std::make_unique<TrieNodeWithValue<T>>(value_, this->children_);
   }
 
   // The value associated with this trie node.
