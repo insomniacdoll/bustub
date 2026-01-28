@@ -78,10 +78,12 @@ auto ArcReplacer::Evict() -> std::optional<frame_id_t> {
       // Move the frame from MRU to MRU ghost
       mru_ghost_.push_front(frame_status->page_id_);
       
-      // Update ghost map
-      ghost_map_[frame_status->page_id_] = std::make_shared<FrameStatus>(
+      // Update ghost map with iterator
+      auto ghost_status = std::make_shared<FrameStatus>(
           frame_status->page_id_, frame_status->frame_id_, 
           frame_status->evictable_, ArcStatus::MRU_GHOST);
+      ghost_status->mru_ghost_it_ = mru_ghost_.begin();
+      ghost_map_[frame_status->page_id_] = ghost_status;
       
       // Remove from alive map
       alive_map_.erase(frame_id);
@@ -107,10 +109,12 @@ auto ArcReplacer::Evict() -> std::optional<frame_id_t> {
         // Move the frame from MFU to MFU ghost
         mfu_ghost_.push_front(frame_status->page_id_);
         
-        // Update ghost map
-        ghost_map_[frame_status->page_id_] = std::make_shared<FrameStatus>(
+        // Update ghost map with iterator
+        auto ghost_status = std::make_shared<FrameStatus>(
             frame_status->page_id_, frame_status->frame_id_, 
             frame_status->evictable_, ArcStatus::MFU_GHOST);
+        ghost_status->mfu_ghost_it_ = mfu_ghost_.begin();
+        ghost_map_[frame_status->page_id_] = ghost_status;
         
         // Remove from alive map
         alive_map_.erase(frame_id);
@@ -138,10 +142,12 @@ auto ArcReplacer::Evict() -> std::optional<frame_id_t> {
       // Move the frame from MFU to MFU ghost
       mfu_ghost_.push_front(frame_status->page_id_);
       
-      // Update ghost map
-      ghost_map_[frame_status->page_id_] = std::make_shared<FrameStatus>(
+      // Update ghost map with iterator
+      auto ghost_status = std::make_shared<FrameStatus>(
           frame_status->page_id_, frame_status->frame_id_, 
           frame_status->evictable_, ArcStatus::MFU_GHOST);
+      ghost_status->mfu_ghost_it_ = mfu_ghost_.begin();
+      ghost_map_[frame_status->page_id_] = ghost_status;
       
       // Remove from alive map
       alive_map_.erase(frame_id);
@@ -167,10 +173,12 @@ auto ArcReplacer::Evict() -> std::optional<frame_id_t> {
         // Move the frame from MRU to MRU ghost
         mru_ghost_.push_front(frame_status->page_id_);
         
-        // Update ghost map
-        ghost_map_[frame_status->page_id_] = std::make_shared<FrameStatus>(
+        // Update ghost map with iterator
+        auto ghost_status = std::make_shared<FrameStatus>(
             frame_status->page_id_, frame_status->frame_id_, 
             frame_status->evictable_, ArcStatus::MRU_GHOST);
+        ghost_status->mru_ghost_it_ = mru_ghost_.begin();
+        ghost_map_[frame_status->page_id_] = ghost_status;
         
         // Remove from alive map
         alive_map_.erase(frame_id);
@@ -223,20 +231,16 @@ void ArcReplacer::RecordAccess(frame_id_t frame_id, page_id_t page_id, [[maybe_u
   if (alive_map_.find(frame_id) != alive_map_.end()) {
     auto& frame_status = alive_map_[frame_id];
     if (frame_status->arc_status_ == ArcStatus::MRU) {
-      // Move from MRU to MFU
-      auto it = std::find(mru_.begin(), mru_.end(), frame_id);
-      if (it != mru_.end()) {
-        mru_.erase(it);
-        mfu_.push_front(frame_id);
-        frame_status->arc_status_ = ArcStatus::MFU;
-      }
+      // Move from MRU to MFU using iterator
+      mru_.erase(frame_status->mru_it_);
+      mfu_.push_front(frame_id);
+      frame_status->mfu_it_ = mfu_.begin();
+      frame_status->arc_status_ = ArcStatus::MFU;
     } else if (frame_status->arc_status_ == ArcStatus::MFU) {
-      // Move to front of MFU
-      auto it = std::find(mfu_.begin(), mfu_.end(), frame_id);
-      if (it != mfu_.end()) {
-        mfu_.erase(it);
-        mfu_.push_front(frame_id);
-      }
+      // Move to front of MFU using iterator
+      mfu_.erase(frame_status->mfu_it_);
+      mfu_.push_front(frame_id);
+      frame_status->mfu_it_ = mfu_.begin();
     }
   }
   // Case 2: Access hits mru_ghost_
@@ -252,16 +256,16 @@ void ArcReplacer::RecordAccess(frame_id_t frame_id, page_id_t page_id, [[maybe_u
       mru_target_size_ = std::min(replacer_size_, mru_target_size_ + delta);
     }
     
-    // Remove from mru_ghost_ and add to mfu_
-    auto it = std::find(mru_ghost_.begin(), mru_ghost_.end(), page_id);
-    if (it != mru_ghost_.end()) {
-      mru_ghost_.erase(it);
-    }
+    // Remove from mru_ghost_ using iterator
+    auto& ghost_status = ghost_map_[page_id];
+    mru_ghost_.erase(ghost_status->mru_ghost_it_);
     ghost_map_.erase(page_id);
     
     // Add to mfu_ with evictable=true status (frames coming back from ghost are considered evictable)
     mfu_.push_front(frame_id);
-    alive_map_[frame_id] = std::make_shared<FrameStatus>(page_id, frame_id, true, ArcStatus::MFU);
+    auto frame_status = std::make_shared<FrameStatus>(page_id, frame_id, true, ArcStatus::MFU);
+    frame_status->mfu_it_ = mfu_.begin();
+    alive_map_[frame_id] = frame_status;
     // Increase size since this frame is now evictable
     curr_size_++;
   }
@@ -278,16 +282,16 @@ void ArcReplacer::RecordAccess(frame_id_t frame_id, page_id_t page_id, [[maybe_u
       mru_target_size_ = std::max(static_cast<size_t>(0), mru_target_size_ - delta);
     }
     
-    // Remove from mfu_ghost_ and add to mfu_
-    auto it = std::find(mfu_ghost_.begin(), mfu_ghost_.end(), page_id);
-    if (it != mfu_ghost_.end()) {
-      mfu_ghost_.erase(it);
-    }
+    // Remove from mfu_ghost_ using iterator
+    auto& ghost_status = ghost_map_[page_id];
+    mfu_ghost_.erase(ghost_status->mfu_ghost_it_);
     ghost_map_.erase(page_id);
     
     // Add to mfu_ with evictable=true status (frames coming back from ghost are considered evictable)
     mfu_.push_front(frame_id);
-    alive_map_[frame_id] = std::make_shared<FrameStatus>(page_id, frame_id, true, ArcStatus::MFU);
+    auto frame_status = std::make_shared<FrameStatus>(page_id, frame_id, true, ArcStatus::MFU);
+    frame_status->mfu_it_ = mfu_.begin();
+    alive_map_[frame_id] = frame_status;
     // Increase size since this frame is now evictable
     curr_size_++;
   }
@@ -298,8 +302,10 @@ void ArcReplacer::RecordAccess(frame_id_t frame_id, page_id_t page_id, [[maybe_u
       // Case 4(a): Kill the last element in MRU ghost list
       if (!mru_ghost_.empty()) {
         page_id_t ghost_page_id = mru_ghost_.back();
-        mru_ghost_.pop_back();
+        auto it = mru_ghost_.end();
+        --it;
         ghost_map_.erase(ghost_page_id);
+        mru_ghost_.pop_back();
       }
     } else if (mru_.size() + mru_ghost_.size() < replacer_size_) {
       // Case 4(b): Check if total size = 2 * replacer size
@@ -307,8 +313,8 @@ void ArcReplacer::RecordAccess(frame_id_t frame_id, page_id_t page_id, [[maybe_u
         // Kill the last element in MFU ghost list
         if (!mfu_ghost_.empty()) {
           page_id_t ghost_page_id = mfu_ghost_.back();
-          mfu_ghost_.pop_back();
           ghost_map_.erase(ghost_page_id);
+          mfu_ghost_.pop_back();
         }
       }
       // Otherwise, simply add to MRU
@@ -317,7 +323,9 @@ void ArcReplacer::RecordAccess(frame_id_t frame_id, page_id_t page_id, [[maybe_u
     // Add to MRU
     mru_.push_front(frame_id);
     // Default to evictable = false, the user needs to call SetEvictable to make it evictable
-    alive_map_[frame_id] = std::make_shared<FrameStatus>(page_id, frame_id, false, ArcStatus::MRU);
+    auto frame_status = std::make_shared<FrameStatus>(page_id, frame_id, false, ArcStatus::MRU);
+    frame_status->mru_it_ = mru_.begin();
+    alive_map_[frame_id] = frame_status;
   }
 }
 
@@ -399,23 +407,13 @@ void ArcReplacer::Remove(frame_id_t frame_id) {
     throw std::invalid_argument("Frame is not evictable");
   }
   
-  // Remove frame from its current list
+  // Remove frame from its current list using iterator
   switch (frame_status->arc_status_) {
     case ArcStatus::MRU:
-      {
-        auto list_it = std::find(mru_.begin(), mru_.end(), frame_id);
-        if (list_it != mru_.end()) {
-          mru_.erase(list_it);
-        }
-      }
+      mru_.erase(frame_status->mru_it_);
       break;
     case ArcStatus::MFU:
-      {
-        auto list_it = std::find(mfu_.begin(), mfu_.end(), frame_id);
-        if (list_it != mfu_.end()) {
-          mfu_.erase(list_it);
-        }
-      }
+      mfu_.erase(frame_status->mfu_it_);
       break;
     default:
       // Should not happen for frames in alive_map_
