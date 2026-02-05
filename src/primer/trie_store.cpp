@@ -10,8 +10,8 @@ namespace bustub {
 template <class T>
 auto TrieStore::Get(std::string_view key) -> std::optional<ValueGuard<T>> {
   // (1) Take the root lock, get the root, and release the root lock.
-  std::lock_guard<std::mutex> root_lock(root_lock_); // 修改：使用 std::lock_guard 代替 std::shared_lock
-  const T* value = root_.Get<T>(key); // 修改：指定模板参数 T
+  std::shared_lock<std::shared_mutex> root_lock(root_lock_);
+  const T* value = root_.Get<T>(key);
 
   // (2) If the value is found, return a ValueGuard object that holds a reference to the value and the
   //     root. Otherwise, return std::nullopt.
@@ -29,17 +29,21 @@ template <class T>
 void TrieStore::Put(std::string_view key, T value) {
   // Ensure there is only one writer at a time.
   std::lock_guard<std::mutex> write_lock(write_lock_);
-  std::lock_guard<std::mutex> root_lock(root_lock_);
+
+  // Move the value before acquiring the root lock to avoid deadlocks when T's move constructor blocks
+  auto moved_value = std::move(value);
+
+  std::unique_lock<std::shared_mutex> root_lock(root_lock_);
 
   // Insert or update the value in the trie and update the root.
-  root_ = root_.Put(key, std::move(value));
+  root_ = root_.Put(key, std::move(moved_value));
 }
 
 /** @brief This function will remove the key-value pair from the trie. */
 void TrieStore::Remove(std::string_view key) {
   // Ensure there is only one writer at a time.
   std::lock_guard<std::mutex> write_lock(write_lock_);
-  std::lock_guard<std::mutex> root_lock(root_lock_);
+  std::unique_lock<std::shared_mutex> root_lock(root_lock_);
 
   // Remove the value from the trie and update the root.
   root_ = root_.Remove(key);
