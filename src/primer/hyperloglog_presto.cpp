@@ -67,7 +67,7 @@ auto HyperLogLogPresto<KeyType>::AddElem(KeyType val) -> void {
   if (rank > current_max_rank) {
     if (rank <= DENSE_BUCKET_SIZE) {
       // Set bits 0 to rank-1 in dense bucket (cumulative)
-      for (int i = 0; i < rank; i++) {
+      for (uint64_t i = 0; i < rank; i++) {
         dense_bucket_[index].set(i);
       }
       // Clear overflow
