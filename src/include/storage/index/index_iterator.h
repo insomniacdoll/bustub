@@ -29,8 +29,12 @@ namespace bustub {
 FULL_INDEX_TEMPLATE_ARGUMENTS_DEFN
 class IndexIterator {
  public:
-  // you may define your own constructor based on your member variables
+  // Constructor for normal iterator
+  IndexIterator(std::shared_ptr<TracedBufferPoolManager> bpm, ReadPageGuard guard, int index, page_id_t root_page_id);
+
+  // Constructor for end iterator
   IndexIterator();
+
   ~IndexIterator();  // NOLINT
 
   auto IsEnd() -> bool;
@@ -39,12 +43,20 @@ class IndexIterator {
 
   auto operator++() -> IndexIterator &;
 
-  auto operator==(const IndexIterator &itr) const -> bool { UNIMPLEMENTED("TODO(P2): Add implementation."); }
+  auto operator==(const IndexIterator &itr) const -> bool;
 
-  auto operator!=(const IndexIterator &itr) const -> bool { UNIMPLEMENTED("TODO(P2): Add implementation."); }
+  auto operator!=(const IndexIterator &itr) const -> bool;
 
  private:
   // add your own private member variables here
+  std::shared_ptr<TracedBufferPoolManager> bpm_;
+  std::optional<ReadPageGuard> guard_;
+  int index_;
+  page_id_t root_page_id_;
+  bool is_end_;
+
+  // Helper method to skip tombstones
+  void SkipTombstones();
 };
 
 }  // namespace bustub

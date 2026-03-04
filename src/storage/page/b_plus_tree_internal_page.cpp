@@ -31,7 +31,11 @@ namespace bustub {
  * @param max_size Maximal size of the page
  */
 INDEX_TEMPLATE_ARGUMENTS
-void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(int max_size) { UNIMPLEMENTED("TODO(P2): Add implementation."); }
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(int max_size) {
+  SetPageType(IndexPageType::INTERNAL_PAGE);
+  SetSize(0);
+  SetMaxSize(max_size);
+}
 
 /**
  * @brief Helper method to get/set the key associated with input "index"(a.k.a
@@ -42,7 +46,7 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::Init(int max_size) { UNIMPLEMENTED("TODO(P2
  */
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const -> KeyType {
-  UNIMPLEMENTED("TODO(P2): Add implementation.");
+  return key_array_[index];
 }
 
 /**
@@ -53,7 +57,7 @@ auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::KeyAt(int index) const -> KeyType {
  */
 INDEX_TEMPLATE_ARGUMENTS
 void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {
-  UNIMPLEMENTED("TODO(P2): Add implementation.");
+  key_array_[index] = key;
 }
 
 /**
@@ -65,7 +69,34 @@ void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetKeyAt(int index, const KeyType &key) {
  */
 INDEX_TEMPLATE_ARGUMENTS
 auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueAt(int index) const -> ValueType {
-  UNIMPLEMENTED("TODO(P2): Add implementation.");
+  return page_id_array_[index];
+}
+
+/**
+ * @brief Set the value at the specified index.
+ *
+ * @param index The index of the value to set.
+ * @param value The new value to set.
+ */
+INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_INTERNAL_PAGE_TYPE::SetValueAt(int index, const ValueType &value) {
+  page_id_array_[index] = value;
+}
+
+/**
+ * @brief Find the index of the given value (page_id) in the page_id_array_
+ *
+ * @param value The page_id to search for
+ * @return The index that corresponds to the specified value, or -1 if not found
+ */
+INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_INTERNAL_PAGE_TYPE::ValueIndex(const ValueType &value) const -> int {
+  for (int i = 0; i < GetSize(); i++) {
+    if (page_id_array_[i] == value) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 // valuetype for internalNode should be page id_t
