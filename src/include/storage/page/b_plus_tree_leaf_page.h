@@ -78,6 +78,12 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   void SetValueAt(int index, const ValueType &value);
   auto IsTombstone(int index) const -> bool;
 
+  // Tombstone management methods
+  void AddTombstone(int index);
+  void RemoveTombstone(int index);
+  void ClearTombstone(int index);
+  auto GetNumTombstones() const -> size_t;
+
   /**
    * @brief for test only return a string representing all keys in
    * this leaf page formatted as "(tombkey1, tombkey2, ...|key1,key2,key3,...)"

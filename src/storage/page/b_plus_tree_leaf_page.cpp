@@ -111,6 +111,65 @@ auto B_PLUS_TREE_LEAF_PAGE_TYPE::IsTombstone(int index) const -> bool {
   return false;
 }
 
+/**
+ * @brief Add a tombstone for the given index
+ */
+FULL_INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::AddTombstone(int index) {
+  // Check if already a tombstone
+  for (size_t i = 0; i < num_tombstones_; i++) {
+    if (tombstones_[i] == static_cast<size_t>(index)) {
+      return;
+    }
+  }
+
+  // Shift existing tombstones to make room for the new one (add to the end)
+  // Tombstones are ordered by recency, with oldest at front
+  if (num_tombstones_ < LEAF_PAGE_TOMB_CNT) {
+    tombstones_[num_tombstones_] = static_cast<size_t>(index);
+    num_tombstones_++;
+  } else {
+    // Tombstone buffer is full, remove the oldest one (at index 0)
+    for (size_t i = 0; i < num_tombstones_ - 1; i++) {
+      tombstones_[i] = tombstones_[i + 1];
+    }
+    tombstones_[num_tombstones_ - 1] = static_cast<size_t>(index);
+  }
+}
+
+/**
+ * @brief Remove a specific tombstone by index
+ */
+FULL_INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::RemoveTombstone(int index) {
+  for (size_t i = 0; i < num_tombstones_; i++) {
+    if (tombstones_[i] == static_cast<size_t>(index)) {
+      // Shift remaining tombstones
+      for (size_t j = i; j < num_tombstones_ - 1; j++) {
+        tombstones_[j] = tombstones_[j + 1];
+      }
+      num_tombstones_--;
+      return;
+    }
+  }
+}
+
+/**
+ * @brief Clear a tombstone at the given index
+ */
+FULL_INDEX_TEMPLATE_ARGUMENTS
+void B_PLUS_TREE_LEAF_PAGE_TYPE::ClearTombstone(int index) {
+  RemoveTombstone(index);
+}
+
+/**
+ * @brief Get the number of tombstones
+ */
+FULL_INDEX_TEMPLATE_ARGUMENTS
+auto B_PLUS_TREE_LEAF_PAGE_TYPE::GetNumTombstones() const -> size_t {
+  return num_tombstones_;
+}
+
 template class BPlusTreeLeafPage<GenericKey<4>, RID, GenericComparator<4>>;
 
 template class BPlusTreeLeafPage<GenericKey<8>, RID, GenericComparator<8>>;

@@ -30,6 +30,12 @@ class TracedBufferPoolManager {
     return bpm_->CheckedReadPage(page_id, access_type);
   }
 
+  auto CheckedWritePage(page_id_t page_id, AccessType access_type = AccessType::Unknown)
+      -> std::optional<WritePageGuard> {
+    writes_++;
+    return bpm_->CheckedWritePage(page_id, access_type);
+  }
+
   auto NewPage() -> page_id_t { return bpm_->NewPage(); }
   auto DeletePage(page_id_t page) -> bool { return bpm_->DeletePage(page); }
 
