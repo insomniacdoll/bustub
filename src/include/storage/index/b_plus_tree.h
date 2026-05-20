@@ -135,6 +135,49 @@ class BPlusTree {
   int leaf_max_size_;
   int internal_max_size_;
   page_id_t header_page_id_;
+
+  // Private helper methods for GetValue (read-mode)
+  int FindChildIndexRead(const InternalPage *internal, const KeyType &key);
+  int LowerBoundRead(const LeafPage *leaf, const KeyType &key);
+
+  // Private helper methods for Insert (write-mode)
+  void FindLeafPageWrite(const KeyType &key, Context &ctx);
+  int FindChildIndexWrite(InternalPage *internal, const KeyType &key);
+  int LowerBoundWrite(LeafPage *leaf, const KeyType &key);
+  void CreateNewRootLeaf(Context *ctx, const KeyType &key, const ValueType &value);
+  void CreateNewRootInternal(Context *ctx, page_id_t old_child_id, const KeyType &sep_key, page_id_t new_child_id);
+  void InsertIntoParent(Context *ctx, page_id_t old_child_id, const KeyType &sep_key, page_id_t new_child_id);
+  void InsertIntoInternalPage(InternalPage *internal, int insert_index, const KeyType &key, page_id_t child_id);
+  auto SplitInternal(InternalPage *internal, int insert_index, const KeyType &insert_key, page_id_t insert_child_id)
+      -> std::pair<page_id_t, KeyType>;
+  auto SplitLeaf(LeafPage *leaf) -> std::pair<page_id_t, KeyType>;
+  auto ShiftEntriesRight(LeafPage *leaf, int pos) -> bool;
+
+  // Private helper methods for Remove
+  void UpdateParentSeparator(Context &ctx, const KeyType &new_first_key);
+  auto CalculateExpectedSizeAfterRedistribution(LeafPage *leaf, bool borrow_is_tomb) -> int;
+  void CoalesceOrRedistribute(Context *ctx);
+  void AdjustRoot(Context *ctx);
+
+  // Private helper methods for leaf rebalancing
+  void RedistributeLeafFromLeft(LeafPage *leaf, InternalPage *parent, int leaf_index, WritePageGuard left_guard,
+                                 LeafPage *left);
+  void RedistributeLeafFromRight(LeafPage *leaf, InternalPage *parent, int leaf_index, WritePageGuard right_guard,
+                                  LeafPage *right);
+  void CoalesceLeafWithLeft(Context *ctx, InternalPage *parent, int leaf_index, WritePageGuard left_guard,
+                             LeafPage *left);
+  void CoalesceLeafWithRight(Context *ctx, InternalPage *parent, int leaf_index, WritePageGuard right_guard,
+                              LeafPage *right);
+
+  // Private helper methods for internal rebalancing
+  void RedistributeInternalFromLeft(InternalPage *internal, InternalPage *parent, int page_index,
+                                     WritePageGuard left_guard, InternalPage *left);
+  void RedistributeInternalFromRight(InternalPage *internal, InternalPage *parent, int page_index,
+                                      WritePageGuard right_guard, InternalPage *right);
+  void CoalesceInternalWithLeft(Context *ctx, InternalPage *parent, int page_index, WritePageGuard left_guard,
+                                 InternalPage *left);
+  void CoalesceInternalWithRight(Context *ctx, InternalPage *parent, int page_index, WritePageGuard right_guard,
+                                  InternalPage *right);
 };
 
 /**

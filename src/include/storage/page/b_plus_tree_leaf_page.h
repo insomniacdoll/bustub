@@ -84,6 +84,18 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   void ClearTombstone(int index);
   auto GetNumTombstones() const -> size_t;
 
+  // Get tombstone indexes in recency order (oldest first)
+  auto GetTombstoneIndexes() const -> std::vector<size_t>;
+
+  // Get tombstone buffer capacity (max number of tombstones)
+  auto GetTombstoneCapacity() const -> size_t;
+
+  // Rebuild tombstones with overflow handling
+  // Returns true if first physical key changed (entry at index 0 was deleted)
+  // PRECONDITION: all indexes < current GetSize()
+  // NOTE: Caller must check GetSize() > 0 before reading first key
+  auto RebuildTombstones(std::vector<size_t> indexes) -> bool;
+
   /**
    * @brief for test only return a string representing all keys in
    * this leaf page formatted as "(tombkey1, tombkey2, ...|key1,key2,key3,...)"
@@ -128,6 +140,14 @@ class BPlusTreeLeafPage : public BPlusTreePage {
   KeyType key_array_[LEAF_PAGE_SLOT_CNT];
   ValueType rid_array_[LEAF_PAGE_SLOT_CNT];
   // (Spring 2025) Feel free to add more fields and helper functions below if needed
+
+  // Private helper methods for tombstone management
+  // Physically remove entry at given index, shift arrays left, adjust tombstones.
+  // PRECONDITION: 0 <= index < GetSize()
+  void PhysicalDeleteAt(int index);
+
+  // Adjust tombstone indexes after a physical deletion at the given index.
+  void AdjustTombstonesAfterDelete(int deleted_index);
 };
 
 }  // namespace bustub
